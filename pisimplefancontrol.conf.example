@@ -9,16 +9,16 @@ PWM_CHANNEL=0
 # PWM="/sys/class/pwm/pwmchip0/pwm0"
 TEMP_SENSOR="/sys/class/thermal/thermal_zone0/temp"
 
-# Fan curve (temperatures in millidegrees Celsius)
+# Fan curve (temperatures in Celsius, duty in percent)
 PERIOD=40000000              # 25 Hz
-MIN_TEMP=45000               # 45 C
-MAX_TEMP=75000               # 75 C
-MIN_DUTY=8000000             # 20%
-MAX_DUTY=40000000            # 100%
+MIN_TEMP=50                  # 50 C
+MAX_TEMP=70                  # 70 C
+MIN_DUTY=20                  # 20%
+MAX_DUTY=100                 # 100%
 
 # Startup kick to overcome fan stall
-KICK_DUTY=40000000
-KICK_TIME=2
+KICK_DUTY=100                # percent
+KICK_TIME_SECONDS=2
 
 # Behavior
 TEMP_POLL_SECONDS=5

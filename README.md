@@ -60,7 +60,7 @@ sudo systemctl enable --now pisimplefancontrol.service
 ```
 
 ## Configuration
-Defaults live in `/etc/pisimplefancontrol.conf`:
+Defaults live in `/etc/pisimplefancontrol.conf` (Celsius temps, percent duty). Example:
 ```bash
 # Hardware
 INVERT_PWM=1                 # 0 = normal, 1 = inverted (active-low)
@@ -68,16 +68,16 @@ PWMCHIP="/sys/class/pwm/pwmchip0"
 PWM_CHANNEL=0
 TEMP_SENSOR="/sys/class/thermal/thermal_zone0/temp"
 
-# Fan curve (temperatures are millidegrees Celsius)
+# Fan curve (temperatures in Celsius, duty in percent)
 PERIOD=40000000              # 25 Hz
-MIN_TEMP=45000               # 45 C
-MAX_TEMP=75000               # 75 C
-MIN_DUTY=8000000             # 20%
-MAX_DUTY=40000000            # 100%
+MIN_TEMP=50                  # 50 C
+MAX_TEMP=70                  # 70 C
+MIN_DUTY=20                  # 20%
+MAX_DUTY=100                 # 100%
 
 # Startup kick
-KICK_DUTY=40000000
-KICK_TIME=2
+KICK_DUTY=100                # percent (converted to raw internally)
+KICK_TIME_SECONDS=2
 
 # Behavior
 TEMP_POLL_SECONDS=5
@@ -86,7 +86,7 @@ DEBUG=false
 Key tuning points:
 - `INVERT_PWM`: set to `1` for active-low wiring (Orange Pi default), `0` for Raspberry Pi–style active-high.
 - `PWMCHIP` / `PWM_CHANNEL`: point to the PWM device for your board.
-- `MIN_TEMP`/`MAX_TEMP` and `MIN_DUTY`/`MAX_DUTY`: define the linear ramp.
+- `MIN_TEMP`/`MAX_TEMP` (C) and `MIN_DUTY`/`MAX_DUTY` (percent): define the linear ramp.
 - `TEMP_POLL_SECONDS`: how often to read temperature.
 - `DEBUG=true`: enable verbose logs from the service.
 

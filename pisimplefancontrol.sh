@@ -14,12 +14,12 @@ PWM="$PWMCHIP/pwm$PWM_CHANNEL"
 TEMP_SENSOR="/sys/class/thermal/thermal_zone0/temp"
 
 PERIOD=40000000              # 25 Hz
-MIN_TEMP=45000               # 45 C
-MAX_TEMP=75000               # 75 C
-MIN_DUTY=8000000             # 20%
-MAX_DUTY=40000000            # 100%
-KICK_DUTY=40000000
-KICK_TIME=2
+MIN_TEMP=45                  # Celsius
+MAX_TEMP=75                  # Celsius
+MIN_DUTY=20                  # percent
+MAX_DUTY=100                 # percent
+KICK_DUTY=100                # percent
+KICK_TIME_SECONDS=2
 TEMP_POLL_SECONDS=5
 DEBUG=false
 
@@ -99,9 +99,9 @@ setup_pwm() {
 }
 
 kick_start_fan() {
-  echo "[INIT] Kick start: 100%"
-  apply_duty "$KICK_DUTY"
-  sleep "$KICK_TIME"
+  echo "[INIT] Kick start: ${KICK_DUTY}%"
+  apply_duty "$KICK_DUTY_RAW"
+  sleep "$KICK_TIME_SECONDS"
 }
 
 read_temp_raw() {
@@ -114,16 +114,36 @@ read_temp_c() {
   echo $(( raw / 1000 ))
 }
 
+percent_to_raw_duty() {
+  local pct=$1
+  if [ "$pct" -lt 0 ]; then
+    pct=0
+  elif [ "$pct" -gt 100 ]; then
+    pct=100
+  fi
+  echo $(( pct * PERIOD / 100 ))
+}
+
+MIN_DUTY_RAW=0
+MAX_DUTY_RAW=0
+KICK_DUTY_RAW=0
+
+compute_duty_bounds() {
+  MIN_DUTY_RAW=$(percent_to_raw_duty "$MIN_DUTY")
+  MAX_DUTY_RAW=$(percent_to_raw_duty "$MAX_DUTY")
+  KICK_DUTY_RAW=$(percent_to_raw_duty "$KICK_DUTY")
+}
+
 select_target_duty() {
-  local temp_raw=$1
-  if [ "$temp_raw" -le "$MIN_TEMP" ]; then
-    TARGET_DUTY=$MIN_DUTY
+  local temp_c=$1
+  if [ "$temp_c" -le "$MIN_TEMP" ]; then
+    TARGET_DUTY=$MIN_DUTY_RAW
     TARGET_MODE="MIN"
-  elif [ "$temp_raw" -ge "$MAX_TEMP" ]; then
-    TARGET_DUTY=$MAX_DUTY
+  elif [ "$temp_c" -ge "$MAX_TEMP" ]; then
+    TARGET_DUTY=$MAX_DUTY_RAW
     TARGET_MODE="MAX"
   else
-    TARGET_DUTY=$(( MIN_DUTY + (temp_raw - MIN_TEMP) * (MAX_DUTY - MIN_DUTY) / (MAX_TEMP - MIN_TEMP) ))
+    TARGET_DUTY=$(( MIN_DUTY_RAW + (temp_c - MIN_TEMP) * (MAX_DUTY_RAW - MIN_DUTY_RAW) / (MAX_TEMP - MIN_TEMP) ))
     TARGET_MODE="RAMP"
   fi
 }
@@ -135,8 +155,8 @@ print_startup_info() {
   echo "GPIO path: $PWM"
   echo "Temperature sensor: $TEMP_SENSOR"
   echo "Period: $PERIOD"
-  echo "Temperature range (mC): $MIN_TEMP - $MAX_TEMP"
-  echo "Duty range: $MIN_DUTY - $MAX_DUTY"
+  echo "Temperature range (C): $MIN_TEMP - $MAX_TEMP"
+  echo "Duty range: ${MIN_DUTY}% - ${MAX_DUTY}%"
   echo "Poll interval: $TEMP_POLL_SECONDS s"
   if [ "$DEBUG" = true ]; then
     echo "Debug enabled"
@@ -158,13 +178,15 @@ main_loop() {
     temp_raw=$(read_temp_raw)
     temp_c=$(( temp_raw / 1000 ))
 
-    select_target_duty "$temp_raw"
+    select_target_duty "$temp_c"
     pct=$(( TARGET_DUTY * 100 / PERIOD ))
 
     debug "[DEBUG] Temp raw=${temp_raw}  Mode=${TARGET_MODE}  Duty=${TARGET_DUTY} (${pct}%)"
     apply_duty "$TARGET_DUTY"
 
-    echo "[FAN] Temp=${temp_c}C  Mode=${TARGET_MODE}  Duty=${pct}%"
+    if [ "$DEBUG" = true ]; then
+      echo "[FAN] Temp=${temp_c}C  Mode=${TARGET_MODE}  Duty=${pct}%"
+    fi
     sleep "$TEMP_POLL_SECONDS"
   done
 }
@@ -185,6 +207,7 @@ fi
 PWM=${PWM:-$PWMCHIP/pwm${PWM_CHANNEL:-0}}
 TEMP_SENSOR=${TEMP_SENSOR:-${TEMP:-/sys/class/thermal/thermal_zone0/temp}}
 
+compute_duty_bounds
 trap cleanup EXIT
 
 print_startup_info
