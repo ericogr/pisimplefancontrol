@@ -1,13 +1,14 @@
 # Pi Simple Fan Control
 
-A lightweight PWM fan controller that uses the Linux sysfs PWM interface. Tested on an **Orange Pi 5 Ultra** but intended to work on other boards (including Raspberry Pi) that expose a compatible `/sys/class/pwm/pwmchip*/pwm*` device.
+A lightweight PWM fan controller that uses the Linux sysfs PWM interface. Tested on an **Orange Pi 5 Ultra** but intended to work on other boards (including Raspberry Pi) that expose a compatible `/sys/class/pwm/pwmchip*/pwm*` device. The goal is to let that PWM pin drive any fan type: the onboard 5V header, a higher-voltage (e.g., 12 V) fan switched through a small driver/MOSFET, or the PWM lead on a 4-wire fan.
 
-![Orange Pi 5 Ultra](images/orangepi5ultra.png)
+![fan control](images/pisimplefancontrol.png)
 
 ## Features
 - Controls a PWM fan based on CPU temperature with a linear ramp
 - Uses sysfs PWM (no `gpio` dependency), works with inverted PWM wiring
 - Configurable thresholds, poll interval, and startup “kick” to overcome stall
+- Output-only: does not read a tach wire; it just drives PWM/duty to the fan
 - Install via script or manual copy; systemd service included
 
 ## Requirements
@@ -15,11 +16,17 @@ A lightweight PWM fan controller that uses the Linux sysfs PWM interface. Tested
 - Root access (writes to `/sys/class/pwm`, `/etc`, `/usr/local/bin`)
 - A board that exposes a PWM channel (defaults to `pwmchip0/pwm0`)
 - For Raspberry Pi, make sure a PWM channel is enabled via device-tree overlay so it appears under `/sys/class/pwm`
-- On Orange Pi boards, disable the vendor fan service to avoid conflicts:
+- On Orange Pi 5 Ultra the official docs show a 2-pin 1.25 mm 5V fan header that is PWM-controlled, and the stock Orange Pi images ship a `pwm-fan.service` for it—disable/mask it to avoid conflicts:
   ```bash
   sudo systemctl disable pwm-fan.service
   sudo systemctl mask pwm-fan.service
   ```
+
+### Example: driving a 12 V fan with a MOSFET
+- Use a logic-level N-channel MOSFET or low-side driver (e.g., AO3400/IRLZ44N/TIP122) to switch the fan’s ground.
+- Wire: board PWM pin → 100–220 Ω gate/base resistor on the MOSFET/driver; source/emitter → ground; drain/collector → fan ground; fan +12 V → 12 V supply. Add a flyback diode across the fan (1N5819/1N4007) with the stripe on +12 V.
+- Share grounds between the Orange Pi/Raspberry Pi and the 12 V supply. Add a 100 kΩ pull-down on the gate (yes, also for AO3400) to keep the fan off at boot and avoid a floating gate.
+- When to use: this MOSFET path is for 2-wire or 3-wire fans (no dedicated PWM lead). If you have a 4-wire fan with a PWM control wire, feed that wire from the board’s PWM pin (level-compatible) while powering the fan directly from 12 V; no low-side switching needed.
 
 ## Enabling PWM
 You must enable a PWM channel so it shows up under `/sys/class/pwm`.
@@ -31,6 +38,8 @@ Example (Debian, Orange Pi 5 Ultra):
   overlays=pwm3-m3
   ```
   then reboot. This exposes `/sys/class/pwm/pwmchip0/pwm0` for pin 7 on the Orange Pi 5 Ultra header.
+
+> For more information check the [oficial documentation](http://www.orangepi.org/orangepiwiki/index.php/Orange_Pi_5_Ultra#How_to_test_PWM_using_.2Fsys.2Fclass.2Fpwm)
 
 ## Quick start (install script)
 Supported installation methods: script or manual copy (no packages).
