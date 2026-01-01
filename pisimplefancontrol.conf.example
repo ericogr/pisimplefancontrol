@@ -1,0 +1,25 @@
+# Example configuration for pisimplefancontrol
+# Copy to /etc/pisimplefancontrol.conf and adjust as needed.
+
+# Hardware
+INVERT_PWM=1                 # 0 = normal (Raspberry Pi), 1 = inverted (active-low Orange Pi)
+PWMCHIP="/sys/class/pwm/pwmchip0"
+PWM_CHANNEL=0
+# PWM is derived from PWMCHIP and PWM_CHANNEL if not set explicitly
+# PWM="/sys/class/pwm/pwmchip0/pwm0"
+TEMP_SENSOR="/sys/class/thermal/thermal_zone0/temp"
+
+# Fan curve (temperatures in millidegrees Celsius)
+PERIOD=40000000              # 25 Hz
+MIN_TEMP=45000               # 45 C
+MAX_TEMP=75000               # 75 C
+MIN_DUTY=8000000             # 20%
+MAX_DUTY=40000000            # 100%
+
+# Startup kick to overcome fan stall
+KICK_DUTY=40000000
+KICK_TIME=2
+
+# Behavior
+TEMP_POLL_SECONDS=5
+DEBUG=false
