@@ -158,9 +158,8 @@ print_startup_info() {
   echo "Temperature range (C): $MIN_TEMP - $MAX_TEMP"
   echo "Duty range: ${MIN_DUTY}% - ${MAX_DUTY}%"
   echo "Poll interval: $TEMP_POLL_SECONDS s"
-  if [ "$DEBUG" = true ]; then
-    echo "Debug enabled"
-  else
+  debug "Debug enabled"
+  if [ "$DEBUG" != true ]; then
     echo "Debug disabled (use --debug or set DEBUG=true in the config file)"
   fi
 }
@@ -181,12 +180,8 @@ main_loop() {
     select_target_duty "$temp_c"
     pct=$(( TARGET_DUTY * 100 / PERIOD ))
 
-    debug "[DEBUG] Temp raw=${temp_raw}  Mode=${TARGET_MODE}  Duty=${TARGET_DUTY} (${pct}%)"
+    debug "[DEBUG] Mode=${TARGET_MODE} Temp raw=${temp_raw} Temp=${temp_c}C Duty raw=${TARGET_DUTY} Duty=${pct}%"
     apply_duty "$TARGET_DUTY"
-
-    if [ "$DEBUG" = true ]; then
-      echo "[FAN] Temp=${temp_c}C  Mode=${TARGET_MODE}  Duty=${pct}%"
-    fi
     sleep "$TEMP_POLL_SECONDS"
   done
 }
