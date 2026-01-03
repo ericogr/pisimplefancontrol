@@ -78,11 +78,11 @@ PWM_CHANNEL=0
 TEMP_SENSOR="/sys/class/thermal/thermal_zone0/temp"
 
 # Fan curve (temperatures in Celsius, duty in percent)
-PERIOD=40000000              # 25 Hz
-MIN_TEMP=50                  # 50 C
-MAX_TEMP=70                  # 70 C
-MIN_DUTY=20                  # 20%
-MAX_DUTY=100                 # 100%
+FREQUENCY=25                 # PWM frequency in Hz. 2-wire power switching: stay low (25-100 Hz). 4-wire PWM lead: use 25000 for 25 kHz.
+MIN_TEMP=50                  # Minimum temp for the curve (C). Below this, apply MIN_DUTY.
+MAX_TEMP=70                  # Maximum temp for the curve (C). Fan reaches MAX_DUTY here.
+MIN_DUTY=20                  # Minimum duty (%) used at MIN_TEMP.
+MAX_DUTY=100                 # Maximum duty (%) reached at MAX_TEMP.
 
 # Startup kick
 KICK_DUTY=100                # percent (converted to raw internally)
@@ -95,9 +95,12 @@ DEBUG=false
 Key tuning points:
 - `INVERT_PWM`: set to `1` for active-low wiring (Orange Pi default), `0` for Raspberry Pi–style active-high.
 - `PWMCHIP` / `PWM_CHANNEL`: point to the PWM device for your board.
+- `FREQUENCY`: PWM frequency in Hz. For 4-wire fans driven on the PWM lead, 25 kHz (25000 Hz) follows the common spec. For 2-wire fans that are power-switched with a MOSFET and have bulk capacitance on the board, use a lower frequency (e.g., 25-100 Hz) to avoid the cap averaging the PWM to "always on." If you see the fan pegged at 100% even at 1 kHz (1000 Hz), drop closer to 25 Hz.
 - `MIN_TEMP`/`MAX_TEMP` (C) and `MIN_DUTY`/`MAX_DUTY` (percent): define the linear ramp.
 - `TEMP_POLL_SECONDS`: how often to read temperature.
 - `DEBUG=true`: enable verbose logs from the service.
+
+If your PWM hardware cannot hit 25 kHz or you see the fan stuck at 100% when power-switching a 2-wire fan, lower `FREQUENCY` (e.g., to 25 Hz).
 
 ## Usage
 - Check status: `sudo systemctl status pisimplefancontrol.service`

@@ -10,11 +10,11 @@ PWM_CHANNEL=0
 TEMP_SENSOR="/sys/class/thermal/thermal_zone0/temp"
 
 # Fan curve (temperatures in Celsius, duty in percent)
-PERIOD=40000000              # 25 Hz
-MIN_TEMP=50                  # 50 C
-MAX_TEMP=70                  # 70 C
-MIN_DUTY=20                  # 20%
-MAX_DUTY=100                 # 100%
+FREQUENCY=25                 # PWM frequency in Hz. 2-wire power switching: stay low (25-100 Hz). 4-wire PWM lead: use 25000 for 25 kHz.
+MIN_TEMP=50                  # Minimum temp for the curve (C). Below this, apply MIN_DUTY.
+MAX_TEMP=70                  # Maximum temp for the curve (C). Fan reaches MAX_DUTY here.
+MIN_DUTY=20                  # Minimum duty (%) used at MIN_TEMP.
+MAX_DUTY=100                 # Maximum duty (%) reached at MAX_TEMP.
 
 # Startup kick to overcome fan stall
 KICK_DUTY=100                # percent

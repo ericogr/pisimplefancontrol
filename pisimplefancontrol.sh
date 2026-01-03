@@ -13,7 +13,7 @@ PWM_CHANNEL=0
 PWM="$PWMCHIP/pwm$PWM_CHANNEL"
 TEMP_SENSOR="/sys/class/thermal/thermal_zone0/temp"
 
-PERIOD=40000000              # 25 Hz
+FREQUENCY=25                 # Hz. Use 25000 for 25 kHz (4-wire PWM lead) if hardware supports it.
 MIN_TEMP=45                  # Celsius
 MAX_TEMP=75                  # Celsius
 MIN_DUTY=20                  # percent
@@ -154,7 +154,7 @@ print_startup_info() {
   echo "PWM channel: $PWM_CHANNEL"
   echo "GPIO path: $PWM"
   echo "Temperature sensor: $TEMP_SENSOR"
-  echo "Period: $PERIOD"
+  echo "Frequency: ${FREQUENCY} Hz (period ${PERIOD} ns)"
   echo "Temperature range (C): $MIN_TEMP - $MAX_TEMP"
   echo "Duty range: ${MIN_DUTY}% - ${MAX_DUTY}%"
   echo "Poll interval: $TEMP_POLL_SECONDS s"
@@ -201,6 +201,19 @@ fi
 
 PWM=${PWM:-$PWMCHIP/pwm${PWM_CHANNEL:-0}}
 TEMP_SENSOR=${TEMP_SENSOR:-${TEMP:-/sys/class/thermal/thermal_zone0/temp}}
+
+# Backward compatibility: allow PERIOD in config but prefer FREQUENCY.
+if [ -n "${PERIOD:-}" ] && [ -z "${FREQUENCY:-}" ]; then
+  FREQUENCY=$(( 1000000000 / PERIOD ))
+  echo "Warning: PERIOD is deprecated; set FREQUENCY (Hz) instead. Using FREQUENCY=${FREQUENCY} Hz derived from PERIOD=${PERIOD} ns."
+fi
+
+if [ -z "${FREQUENCY:-}" ] || [ "$FREQUENCY" -le 0 ]; then
+  echo "Error: FREQUENCY must be set to a positive integer (Hz)."
+  exit 1
+fi
+
+PERIOD=$(( 1000000000 / FREQUENCY ))
 
 compute_duty_bounds
 trap cleanup EXIT
